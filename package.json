@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "yarn@3.6.1",
   "scripts": {
-    "serve": "nodemon app.js"
+    "serve": "nodemon server.js"
   },
   "dependencies": {
     "dotenv": "^16.3.1",
