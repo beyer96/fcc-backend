@@ -25,37 +25,13 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-const generateAccessToken = user => {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
-};
-
 // Routes
 app.get("/", authenticateToken, (req, res) => {
   res.send(req.user);
 });
 
-app.post("/token", (req, res) => {
-  const refreshToken = req.body.token;
-  if (!refreshToken) return res.sendStatus(401);
-  // Check in database for existing refresh token.
-  // if (!refreshTokens.includes(refreshToken)) return res.sendStatus(403);
-
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-
-    const accessToken = generateAccessToken({ name: user });
-    res.json({ accessToken });
-  });
-});
-
-// Authenticate User
-app.post("/login", (req, res) => {
-  const username = req.body.username;
-  const user = { name: username };
-
-  const accessToken = generateAccessToken(user);
-  const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
-  res.json({ accessToken, refreshToken });
+app.get("/users", (req, res) => {
+  
 });
 
 app.listen(port, () => {
