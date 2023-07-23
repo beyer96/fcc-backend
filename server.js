@@ -1,14 +1,20 @@
 import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
-import CookieParser from "cookie-parser";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 
 const app = express();
 const port = process.env.PORT || 3000;
+const corsOptions = {
+  origin: ["http://localhost:4000", "https://localhost:5173"],
+  credentials: true
+};
 
 // enable using json in body of request
 app.use(express.json());
-app.use(CookieParser());
+app.use(cookieParser(false));
+app.use(cors(corsOptions));
 
 // Middleware
 const authenticateToken = (req, res, next) => {
@@ -27,7 +33,7 @@ const authenticateToken = (req, res, next) => {
 
 // Routes
 app.get("/", authenticateToken, (req, res) => {
-  res.send(req.user);
+  res.status(200).json({ user: req.user });
 });
 
 app.get("/users", (req, res) => {
