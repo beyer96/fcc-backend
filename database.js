@@ -104,3 +104,22 @@ export const saveRefreshToken = async (refreshToken) => {
   }
 };
 
+export const getRefreshTokenDuration = async (refreshToken) => {
+  const client = new Client(clientConfig);
+
+  try {
+    await client.connect();
+
+    const queryText = `
+      SELECT valid_until FROM refresh_tokens WHERE token = $1;
+    `;
+    const result = await client.query(queryText, [refreshToken]);
+
+    return result.rows[0].valid_until;
+  } catch (err) {
+    console.log(`Could not find refresh token in db: ${err.message}`);
+  } finally {
+    client.end();
+  }
+}
+
