@@ -143,3 +143,19 @@ export const extendRefreshTokenDuration = async (refreshToken) => {
   }
 }
 
+export const deleteRefreshToken = async (refreshToken) => {
+  const client = new Client(clientConfig);
+
+  try {
+    await client.connect();
+
+    const queryText = `DELETE FROM refresh_tokens WHERE token = $1;`;
+
+    await client.query(queryText, [refreshToken]);
+  } catch (err) {
+    console.log(`Could not remove refresh token from DB: ${err.message}`);
+  } finally {
+    client.end();
+  }
+}
+

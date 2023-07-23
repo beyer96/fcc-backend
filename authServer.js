@@ -3,7 +3,13 @@ import express from "express";
 import jwt from "jsonwebtoken";
 
 import { encryptPassword, isValidToken } from "./helpers/auth.js"; 
-import { getRefreshTokenDuration, registerUser, saveRefreshToken, verifyUser } from "./database.js";
+import { 
+  deleteRefreshToken,
+  getRefreshTokenDuration,
+  registerUser,
+  saveRefreshToken,
+  verifyUser
+} from "./database.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
@@ -46,6 +52,18 @@ app.post("/login", async (req, res) => {
     res.status(200).json({ username, accessToken, refreshToken });
   } catch (err) {
     res.sendStatus(401);
+  }
+});
+
+app.delete("/logout", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) return res.status(404).json({ error: "Refresh token not found in DB" });
+
+    await deleteRefreshToken(refreshToken);
+    res.sendStatus(204);
+  } catch (err) {
+    res.status(400).json({ error: `Unable to logout: ${err.message}` });
   }
 });
 
