@@ -44,7 +44,7 @@ app.post("/login", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
   
-    res.send({ username, accessToken, refreshToken });
+    res.status(200).json({ username, accessToken, refreshToken });
   } catch (err) {
     res.sendStatus(401);
   }
