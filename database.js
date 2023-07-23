@@ -123,3 +123,23 @@ export const getRefreshTokenDuration = async (refreshToken) => {
   }
 }
 
+export const extendRefreshTokenDuration = async (refreshToken) => {
+  const client = new Client(clientConfig);
+
+  try {
+    await client.connect();
+
+    const queryText = `
+      UPDATE refresh_tokens SET valid_until = to_timestamp($1 / 1000.0) WHERE token = $2;
+    `;
+    const tokenDuration = Date.now() + FIVE_MINUTES;
+    const values = [tokenDuration, refreshToken];
+
+    await client.query(queryText, values);
+  } catch (err) {
+    console.log(`Could not extend refresh tokens duration: ${err.message}`);
+  } finally {
+    client.end();
+  }
+}
+
