@@ -1,6 +1,7 @@
 import "dotenv/config";
 import pkg from "pg";
 import bcrypt from "bcrypt";
+import { FIVE_MINUTES } from "./helpers/constants.js";
 
 const { Client } = pkg;
 
@@ -70,6 +71,32 @@ export const verifyUser = async (username, password) => {
     const isPasswordValid = await bcrypt.compare(password, hashedPassword);
 
     return isPasswordValid;
+  } catch (err) {
+    console.log(err.message);
+  } finally {
+    client.end();
+  }
+};
+
+export const saveRefreshToken = async (refreshToken) => {
+  const client = new Client(clientConfig);
+
+  try {
+    await client.connect();
+
+    const queryText = `
+      INSERT INTO refresh_tokens (
+        valid_until,
+        token
+      ) VALUES (
+        to_timestamp($1 / 1000.0),
+        $2
+      );
+    `;
+    const tokenDuration = Date.now() + FIVE_MINUTES;
+    const values = [tokenDuration, refreshToken];
+
+    await client.query(queryText, values);
   } catch (err) {
     console.log(err.message);
   } finally {

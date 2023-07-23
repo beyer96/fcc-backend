@@ -3,7 +3,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 
 import { encryptPassword } from "./helpers/auth.js"; 
-import { registerUser, verifyUser } from "./database.js";
+import { registerUser, saveRefreshToken, verifyUser } from "./database.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
@@ -24,6 +24,8 @@ app.post("/register", async (req, res) => {
     const accessToken = generateAccessToken({ username });
     const refreshToken = jwt.sign({ username }, process.env.REFRESH_TOKEN_SECRET);
 
+    await saveRefreshToken(refreshToken);
+
     res.status(200).json({ username, accessToken, refreshToken });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
@@ -39,6 +41,8 @@ app.post("/login", async (req, res) => {
 
     const accessToken = generateAccessToken({ username });
     const refreshToken = jwt.sign({ username }, process.env.REFRESH_TOKEN_SECRET);
+
+    await saveRefreshToken(refreshToken);
   
     res.send({ username, accessToken, refreshToken });
   } catch (err) {
