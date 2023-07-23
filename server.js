@@ -1,22 +1,22 @@
 import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
+import CookieParser from "cookie-parser";
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // enable using json in body of request
 app.use(express.json());
+app.use(CookieParser());
 
 // Middleware
 const authenticateToken = (req, res, next) => {
-  // authHeader = 'Bearer ACCESS_TOKEN'
-  const authHeader = req.headers["authorization"];
-  const token = authHeader?.split(" ")[1];
-  if (!token) return res.sendStatus(401);
+  const { accessToken } = req.cookies;
+  if (!accessToken) return res.sendStatus(401);
 
   // Valid token
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+  jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
     // Invalid token - no access
     if (err) return res.sendStatus(403);
 

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 
 import { encryptPassword, isValidToken } from "./helpers/auth.js"; 
 import { 
@@ -10,11 +11,13 @@ import {
   saveRefreshToken,
   verifyUser
 } from "./database.js";
+import { FIVE_MINUTES } from "./helpers/constants.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
 
 app.use(express.json());
+app.use(cookieParser());
 
 const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
 const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
@@ -31,7 +34,9 @@ app.post("/register", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
 
-    res.status(200).json({ username, accessToken, refreshToken });
+    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES)});
+    res.status(200).json({ username });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
   }
@@ -49,7 +54,9 @@ app.post("/login", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
   
-    res.status(200).json({ username, accessToken, refreshToken });
+    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES)});
+    res.status(200).json({ username });
   } catch (err) {
     res.sendStatus(401);
   }
@@ -57,10 +64,12 @@ app.post("/login", async (req, res) => {
 
 app.delete("/logout", async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.cookies;
     if (!refreshToken) return res.status(404).json({ error: "Refresh token not found in DB" });
 
     await deleteRefreshToken(refreshToken);
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
     res.sendStatus(204);
   } catch (err) {
     res.status(400).json({ error: `Unable to logout: ${err.message}` });
@@ -68,7 +77,7 @@ app.delete("/logout", async (req, res) => {
 });
 
 app.post("/token", async (req, res) => {
-  const { refreshToken } = req.body;
+  const { refreshToken } = req.cookies;
   if (!refreshToken) return res.sendStatus(401);
 
   // check if refreshToken is in DB and if it's valid -> 403 if not
@@ -80,7 +89,8 @@ app.post("/token", async (req, res) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
-    res.json({ accessToken });
+    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
+    res.sendStatus(200);
   });
 });
 
