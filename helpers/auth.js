@@ -11,3 +11,5 @@ export const encryptPassword = async password => {
 export const validPassword = async (password, hashedPassword) => {
   return bcrypt.compare(password, hashedPassword);
 };
+
+export const isValidToken = tokenDuration => Date.parse(tokenDuration) > Date.now();
