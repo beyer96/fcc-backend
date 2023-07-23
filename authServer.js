@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 
 import { encryptPassword, isValidToken } from "./helpers/auth.js"; 
 import { 
@@ -18,6 +19,7 @@ const port = process.env.AUTH_SERVER_PORT || 4000;
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(cors());
 
 const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
 const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
