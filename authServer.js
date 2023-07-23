@@ -10,9 +10,8 @@ const port = process.env.AUTH_SERVER_PORT || 4000;
 
 app.use(express.json());
 
-const generateAccessToken = user => {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
-};
+const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
+const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
 
 app.post("/register", async (req, res) => {
   try {
@@ -22,7 +21,7 @@ app.post("/register", async (req, res) => {
     await registerUser(username, encryptedPassword);
 
     const accessToken = generateAccessToken({ username });
-    const refreshToken = jwt.sign({ username }, process.env.REFRESH_TOKEN_SECRET);
+    const refreshToken = generateRefreshToken({ username });
 
     await saveRefreshToken(refreshToken);
 
@@ -40,7 +39,7 @@ app.post("/login", async (req, res) => {
     if (!validLogin) return res.sendStatus(401);
 
     const accessToken = generateAccessToken({ username });
-    const refreshToken = jwt.sign({ username }, process.env.REFRESH_TOKEN_SECRET);
+    const refreshToken = generateRefreshToken({ username });
 
     await saveRefreshToken(refreshToken);
   
