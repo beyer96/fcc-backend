@@ -2,7 +2,7 @@ import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
 
-import { encryptPassword } from "./helpers.js"; 
+import { encryptPassword } from "./helpers/auth.js"; 
 import { registerUser, verifyUser } from "./database.js";
 
 const app = express();
