@@ -2,8 +2,8 @@ import "dotenv/config";
 import express from "express";
 import jwt from "jsonwebtoken";
 
-import { encryptPassword } from "./helpers/auth.js"; 
-import { registerUser, saveRefreshToken, verifyUser } from "./database.js";
+import { encryptPassword, isValidToken } from "./helpers/auth.js"; 
+import { getRefreshTokenDuration, registerUser, saveRefreshToken, verifyUser } from "./database.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
@@ -50,11 +50,14 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.post("/token", (req, res) => {
+app.post("/token", async (req, res) => {
   const { refreshToken } = req.body;
   if (!refreshToken) return res.sendStatus(401);
 
-  // check if refreshToken is in DB -> 403 if not
+  // check if refreshToken is in DB and if it's valid -> 403 if not
+  const tokenDuration = await getRefreshTokenDuration(refreshToken);
+  if (!tokenDuration) return res.status(403).json({ error: "Refresh token is not stored in database" });
+  if (!isValidToken(tokenDuration)) return res.status(403).json({ error: "Refresh token is no longer valid" });
 
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
