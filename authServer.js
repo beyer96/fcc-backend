@@ -16,10 +16,14 @@ import { FIVE_MINUTES } from "./helpers/constants.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
+const corsOptions = {
+  origin: ["http://localhost:3000", "https://localhost:5173"],
+  credentials: true
+};
 
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors());
+app.use(cors(corsOptions));
 
 const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
 const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
@@ -36,8 +40,8 @@ app.post("/register", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
 
-    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES)});
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES), sameSite: "none" });
     res.status(200).json({ username });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
@@ -56,8 +60,8 @@ app.post("/login", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
   
-    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES)});
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES), sameSite: "none" });
     res.status(200).json({ username, message: "Successfully logged in!" });
   } catch (err) {
     res.sendStatus(401);
@@ -91,7 +95,7 @@ app.post("/token", async (req, res) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
-    res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
     res.sendStatus(200);
   });
 });
