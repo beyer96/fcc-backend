@@ -56,7 +56,7 @@ app.post("/login", async (req, res) => {
   
     res.cookie("accessToken", accessToken, { httpOnly: true, expires: new Date(Date.now() + 30 * 1000 )});
     res.cookie("refreshToken", refreshToken, { httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES)});
-    res.status(200).json({ username });
+    res.status(200).json({ username, message: "Successfully logged in!" });
   } catch (err) {
     res.sendStatus(401);
   }
