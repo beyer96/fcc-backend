@@ -13,7 +13,7 @@ const corsOptions = {
 
 // enable using json in body of request
 app.use(express.json());
-app.use(cookieParser(false));
+app.use(cookieParser());
 app.use(cors(corsOptions));
 
 // Middleware
