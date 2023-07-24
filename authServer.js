@@ -51,8 +51,8 @@ app.post("/register", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
 
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES), sameSite: "none" });
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
     res.status(200).json({ username });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
@@ -71,8 +71,8 @@ app.post("/login", async (req, res) => {
 
     await saveRefreshToken(refreshToken);
   
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + FIVE_MINUTES), sameSite: "none" });
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
     res.status(200).json({ username, message: "Successfully logged in!" });
   } catch (err) {
     res.sendStatus(401);
@@ -106,7 +106,7 @@ app.post("/refresh-token", async (req, res) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, expires: new Date(Date.now() + 30 * 1000 ), sameSite: "none" });
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
     res.sendStatus(200);
   });
 });
