@@ -16,13 +16,24 @@ import { FIVE_MINUTES } from "./helpers/constants.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
+const allowedOrigins = ["http://localhost:3000", "http://localhost:5173"];
 const corsOptions = {
-  origin: ["http://localhost:3000", "https://localhost:5173"],
+  origin: allowedOrigins,
   credentials: true
+};
+
+// Middlewares
+const credentials = (req, res, next) => {
+  const { origin } = req.headers;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Credentials", true);
+  }
+  next();
 };
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(credentials);
 app.use(cors(corsOptions));
 
 const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
