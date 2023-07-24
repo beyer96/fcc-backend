@@ -79,21 +79,21 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.delete("/logout", async (req, res) => {
+app.get("/logout", async (req, res) => {
   try {
     const { refreshToken } = req.cookies;
-    if (!refreshToken) return res.status(404).json({ error: "Refresh token not found in DB" });
+    if (!refreshToken) return res.sendStatus(204);
 
     await deleteRefreshToken(refreshToken);
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
+    res.clearCookie("accessToken", { secure: true, httpOnly: true, sameSite: "none" });
+    res.clearCookie("refreshToken", { secure: true, httpOnly: true, sameSite: "none" });
     res.sendStatus(204);
   } catch (err) {
     res.status(400).json({ error: `Unable to logout: ${err.message}` });
   }
 });
 
-app.post("/token", async (req, res) => {
+app.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.cookies;
   if (!refreshToken) return res.sendStatus(401);
 
