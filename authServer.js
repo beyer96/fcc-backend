@@ -36,8 +36,8 @@ app.use(cookieParser());
 app.use(credentials);
 app.use(cors(corsOptions));
 
-const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30s' });
-const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
+const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "30s" });
+const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: FIVE_MINUTES });
 
 app.post("/register", async (req, res) => {
   try {
