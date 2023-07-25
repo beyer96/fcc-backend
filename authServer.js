@@ -4,15 +4,9 @@ import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
-import { encryptPassword, isValidToken } from "./helpers/auth.js"; 
-import { 
-  deleteRefreshToken,
-  getRefreshTokenDuration,
-  registerUser,
-  saveRefreshToken,
-  verifyUser
-} from "./database.js";
-import { FIVE_MINUTES } from "./helpers/constants.js";
+import { encryptPassword } from "./helpers/auth.js"; 
+import { registerUser, verifyUser } from "./database.js";
+import { DAY, FIVE_MINUTES } from "./helpers/constants.js";
 
 const app = express();
 const port = process.env.AUTH_SERVER_PORT || 4000;
@@ -36,8 +30,8 @@ app.use(cookieParser());
 app.use(credentials);
 app.use(cors(corsOptions));
 
-const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "30s" });
-const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: FIVE_MINUTES });
+const generateAccessToken = user => jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: FIVE_MINUTES });
+const generateRefreshToken = user => jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: DAY });
 
 app.post("/register", async (req, res) => {
   try {
@@ -49,10 +43,9 @@ app.post("/register", async (req, res) => {
     const accessToken = generateAccessToken({ username });
     const refreshToken = generateRefreshToken({ username });
 
-    await saveRefreshToken(refreshToken);
-
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fcc-session", true, { maxAge: DAY });
     res.status(200).json({ username });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
@@ -68,12 +61,11 @@ app.post("/login", async (req, res) => {
 
     const accessToken = generateAccessToken({ username });
     const refreshToken = generateRefreshToken({ username });
-
-    await saveRefreshToken(refreshToken);
   
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
-    res.status(200).json({ username, message: "Successfully logged in!" });
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fcc-session", true, { maxAge: DAY });
+    res.status(200).json({ username, message: "Successfully logged in!", accessTokenExpiration: Date.now() + FIVE_MINUTES });
   } catch (err) {
     res.sendStatus(401);
   }
@@ -84,9 +76,9 @@ app.get("/logout", async (req, res) => {
     const { refreshToken } = req.cookies;
     if (!refreshToken) return res.sendStatus(204);
 
-    await deleteRefreshToken(refreshToken);
     res.clearCookie("accessToken", { secure: true, httpOnly: true, sameSite: "none" });
     res.clearCookie("refreshToken", { secure: true, httpOnly: true, sameSite: "none" });
+    res.clearCookie("fcc-session");
     res.sendStatus(204);
   } catch (err) {
     res.status(400).json({ error: `Unable to logout: ${err.message}` });
@@ -97,17 +89,16 @@ app.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.cookies;
   if (!refreshToken) return res.sendStatus(401);
 
-  // check if refreshToken is in DB and if it's valid -> 403 if not
-  const tokenDuration = await getRefreshTokenDuration(refreshToken);
-  if (!tokenDuration) return res.status(403).json({ error: "Refresh token is not stored in database" });
-  if (!isValidToken(tokenDuration)) return res.status(403).json({ error: "Refresh token is no longer valid" });
-
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: 30 * 1000, sameSite: "none" });
-    res.sendStatus(200);
+    const refreshToken = generateRefreshToken({ username: user.username });
+
+    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fcc-session", true, { maxAge: DAY });
+    res.status(200).json({ user, accessTokenExpiration: Date.now() + FIVE_MINUTES });
   });
 });
 
