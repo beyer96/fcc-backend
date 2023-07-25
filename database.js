@@ -1,7 +1,6 @@
 import "dotenv/config";
 import pkg from "pg";
 import bcrypt from "bcrypt";
-import { FIVE_MINUTES } from "./helpers/constants.js";
 
 const { Client } = pkg;
 
@@ -77,85 +76,3 @@ export const verifyUser = async (username, password) => {
     client.end();
   }
 };
-
-export const saveRefreshToken = async (refreshToken) => {
-  const client = new Client(clientConfig);
-
-  try {
-    await client.connect();
-
-    const queryText = `
-      INSERT INTO refresh_tokens (
-        valid_until,
-        token
-      ) VALUES (
-        to_timestamp($1 / 1000.0),
-        $2
-      );
-    `;
-    const tokenDuration = Date.now() + FIVE_MINUTES;
-    const values = [tokenDuration, refreshToken];
-
-    await client.query(queryText, values);
-  } catch (err) {
-    console.log(err.message);
-  } finally {
-    client.end();
-  }
-};
-
-export const getRefreshTokenDuration = async (refreshToken) => {
-  const client = new Client(clientConfig);
-
-  try {
-    await client.connect();
-
-    const queryText = `
-      SELECT valid_until FROM refresh_tokens WHERE token = $1;
-    `;
-    const result = await client.query(queryText, [refreshToken]);
-
-    return result.rows[0].valid_until;
-  } catch (err) {
-    console.log(`Could not find refresh token in db: ${err.message}`);
-  } finally {
-    client.end();
-  }
-}
-
-export const extendRefreshTokenDuration = async (refreshToken) => {
-  const client = new Client(clientConfig);
-
-  try {
-    await client.connect();
-
-    const queryText = `
-      UPDATE refresh_tokens SET valid_until = to_timestamp($1 / 1000.0) WHERE token = $2;
-    `;
-    const tokenDuration = Date.now() + FIVE_MINUTES;
-    const values = [tokenDuration, refreshToken];
-
-    await client.query(queryText, values);
-  } catch (err) {
-    console.log(`Could not extend refresh tokens duration: ${err.message}`);
-  } finally {
-    client.end();
-  }
-}
-
-export const deleteRefreshToken = async (refreshToken) => {
-  const client = new Client(clientConfig);
-
-  try {
-    await client.connect();
-
-    const queryText = `DELETE FROM refresh_tokens WHERE token = $1;`;
-
-    await client.query(queryText, [refreshToken]);
-  } catch (err) {
-    console.log(`Could not remove refresh token from DB: ${err.message}`);
-  } finally {
-    client.end();
-  }
-}
-
