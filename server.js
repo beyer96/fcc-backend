@@ -18,11 +18,11 @@ app.use(cors(corsOptions));
 
 // Middleware
 const authenticateToken = (req, res, next) => {
-  const { accessToken } = req.cookies;
-  if (!accessToken) return res.sendStatus(401);
+  const { fccAccessToken } = req.cookies;
+  if (!fccAccessToken) return res.sendStatus(401);
 
   // Valid token
-  jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+  jwt.verify(fccAccessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
     // Invalid token - no access
     if (err) return res.sendStatus(403);
 
