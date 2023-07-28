@@ -21,6 +21,28 @@ export const getUsers = () => {
   `);
 };
 
+export const getUser = async (username)  => {
+  const client = new Client(clientConfig);
+
+  try {
+    await client.connect();
+
+    const queryText = `SELECT * FROM users WHERE username = $1`;
+    const result = await client.query(queryText, [username]);
+    const user = result.rows[0];
+
+    if (result.rowCount > 0) {
+      return user;
+    } else {
+      return false;
+    }
+  } catch (err) {
+    console.log(`Couldn't find user ${username} in database!`);
+  } finally {
+    client.end();
+  }
+}
+
 export const registerUser = async (username, password) => {
   const client = new Client(clientConfig);
 
@@ -46,6 +68,9 @@ export const registerUser = async (username, password) => {
 
     if (result.rowCount > 0) {
       console.log(`User ${username} successfully created!`);
+      const user = result.rows[0];
+
+      return user;
     } else {
       console.log(`User ${username} already exists!`);
     }
@@ -63,13 +88,14 @@ export const verifyUser = async (username, password) => {
     const queryText = `SELECT * FROM users WHERE username = $1;`;
 
     await client.connect();
-    const user = await client.query(queryText, [username]);
-    if (user.rowCount == 0) return false;
+    const result = await client.query(queryText, [username]);
+    if (result.rowCount == 0) return false;
 
-    const hashedPassword = user.rows[0].password;
+    const user = result.rows[0];
+    const hashedPassword = user.password;
     const isPasswordValid = await bcrypt.compare(password, hashedPassword);
 
-    return isPasswordValid;
+    return isPasswordValid ? user : false;
   } catch (err) {
     console.log(err.message);
   } finally {

@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import { encryptPassword } from "./helpers/auth.js"; 
-import { registerUser, verifyUser } from "./database.js";
+import { registerUser, verifyUser, getUser } from "./database.js";
 import { DAY, FIVE_MINUTES } from "./helpers/constants.js";
 
 const app = express();
@@ -37,16 +37,21 @@ app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
     const encryptedPassword = await encryptPassword(password);
-
-    await registerUser(username, encryptedPassword);
-
+    const user = await registerUser(username, encryptedPassword);
     const accessToken = generateAccessToken({ username });
     const refreshToken = generateRefreshToken({ username });
 
     res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
     res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
     res.cookie("fcc-session", true, { maxAge: DAY });
-    res.status(200).json({ username });
+    res.status(200).json({ 
+      user: {
+        username: user.username,
+        createdAt: user.created_at,
+        cardIds: user.card_ids
+      },
+      accessTokenExpiration: Date.now() + FIVE_MINUTES
+    });
   } catch (err) {
     res.status(500).json({ error: 'An error occurred during registration' });
   }
@@ -55,17 +60,23 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-  
-    const validLogin = await verifyUser(username, password);
-    if (!validLogin) return res.sendStatus(401);
+    const user = await verifyUser(username, password);
+    if (!user) return res.sendStatus(401);
 
-    const accessToken = generateAccessToken({ username });
-    const refreshToken = generateRefreshToken({ username });
+    const accessToken = generateAccessToken({ username: user.username });
+    const refreshToken = generateRefreshToken({ username: user.username });
   
     res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
     res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
     res.cookie("fcc-session", true, { maxAge: DAY });
-    res.status(200).json({ username, message: "Successfully logged in!", accessTokenExpiration: Date.now() + FIVE_MINUTES });
+    res.status(200).json({
+      user: {
+        username: user.username,
+        createdAt: user.created_at,
+        cardIds: user.card_ids
+      },
+      accessTokenExpiration: Date.now() + FIVE_MINUTES
+    });
   } catch (err) {
     res.sendStatus(401);
   }
@@ -89,16 +100,25 @@ app.post("/refresh-token", async (req, res) => {
   const { refreshToken } = req.cookies;
   if (!refreshToken) return res.sendStatus(401);
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
     const refreshToken = generateRefreshToken({ username: user.username });
 
+    const userFromDb = await getUser(user.username);
+
     res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
     res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
     res.cookie("fcc-session", true, { maxAge: DAY });
-    res.status(200).json({ user, accessTokenExpiration: Date.now() + FIVE_MINUTES });
+    res.status(200).json({ 
+      user: {
+        username: userFromDb.username,
+        createdAt: userFromDb.created_at,
+        cardIds: userFromDb.card_ids
+      },
+      accessTokenExpiration: Date.now() + FIVE_MINUTES
+    });
   });
 });
 
