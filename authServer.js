@@ -41,9 +41,9 @@ app.post("/register", async (req, res) => {
     const accessToken = generateAccessToken({ username });
     const refreshToken = generateRefreshToken({ username });
 
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
-    res.cookie("fcc-session", true, { maxAge: DAY });
+    res.cookie("fccAccessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("fccRefreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fccSession", true, { maxAge: DAY });
     res.status(200).json({ 
       user: {
         username: user.username,
@@ -66,9 +66,9 @@ app.post("/login", async (req, res) => {
     const accessToken = generateAccessToken({ username: user.username });
     const refreshToken = generateRefreshToken({ username: user.username });
   
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
-    res.cookie("fcc-session", true, { maxAge: DAY });
+    res.cookie("fccAccessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("fccRefreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fccSession", true, { maxAge: DAY });
     res.status(200).json({
       user: {
         username: user.username,
@@ -84,12 +84,12 @@ app.post("/login", async (req, res) => {
 
 app.get("/logout", async (req, res) => {
   try {
-    const { refreshToken } = req.cookies;
-    if (!refreshToken) return res.sendStatus(204);
+    const { fccRefreshToken } = req.cookies;
+    if (!fccRefreshToken) return res.sendStatus(204);
 
-    res.clearCookie("accessToken", { secure: true, httpOnly: true, sameSite: "none" });
-    res.clearCookie("refreshToken", { secure: true, httpOnly: true, sameSite: "none" });
-    res.clearCookie("fcc-session");
+    res.clearCookie("fccAccessToken", { secure: true, httpOnly: true, sameSite: "none" });
+    res.clearCookie("fccRefreshToken", { secure: true, httpOnly: true, sameSite: "none" });
+    res.clearCookie("fccSession");
     res.sendStatus(204);
   } catch (err) {
     res.status(400).json({ error: `Unable to logout: ${err.message}` });
@@ -97,10 +97,10 @@ app.get("/logout", async (req, res) => {
 });
 
 app.post("/refresh-token", async (req, res) => {
-  const { refreshToken } = req.cookies;
-  if (!refreshToken) return res.sendStatus(401);
+  const { fccRefreshToken } = req.cookies;
+  if (!fccRefreshToken) return res.sendStatus(401);
 
-  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
+  jwt.verify(fccRefreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
     if (err) return res.sendStatus(403);
 
     const accessToken = generateAccessToken({ username: user.username });
@@ -108,9 +108,9 @@ app.post("/refresh-token", async (req, res) => {
 
     const userFromDb = await getUser(user.username);
 
-    res.cookie("accessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
-    res.cookie("refreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
-    res.cookie("fcc-session", true, { maxAge: DAY });
+    res.cookie("fccAccessToken", accessToken, { secure: true, httpOnly: true, maxAge: FIVE_MINUTES, sameSite: "none" });
+    res.cookie("fccRefreshToken", refreshToken, { secure: true, httpOnly: true, maxAge: DAY, sameSite: "none" });
+    res.cookie("fccSession", true, { maxAge: DAY });
     res.status(200).json({ 
       user: {
         username: userFromDb.username,
